@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="author" content="Yunpeng (Larry) Liu">
+    <meta name="description" content="Mirror Learning transforms third-person demonstrations into synthetic first-person observation and action data for embodied agents.">
+    <meta property="og:title" content="Mirror Learning">
+    <meta property="og:description" content="Can embodied agents learn simply by watching others?">
+    <meta property="og:type" content="article">
+    <meta property="og:url" content="https://larrylikestocode.github.io/larryliu-12/mirror-learning/">
+    <meta property="og:image" content="https://larrylikestocode.github.io/larryliu-12/mirror-learning/assets/scaling-comparison.png">
+    <meta name="twitter:card" content="summary_large_image">
+    <title>Mirror Learning — Yunpeng (Larry) Liu</title>
+    <link rel="stylesheet" href="../stylesheet.css">
+    <link rel="stylesheet" href="article.css">
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="site-name" href="../">Yunpeng (Larry) Liu</a>
+      <nav aria-label="Primary navigation">
+        <a href="../">Research</a>
+        <a href="mailto:yunpengl@cs.ubc.ca">Email</a>
+      </nav>
+    </header>
+
+    <main>
+      <article>
+        <header class="article-header">
+          <p class="eyebrow">Research note · August 7, 2026</p>
+          <h1>Mirror Learning</h1>
+          <p class="dek">Can embodied agents learn simply by watching others?</p>
+          <p class="byline">By <a href="https://scholar.google.ca/citations?user=GWgotM0AAAAJ&amp;hl=en">Yunpeng Liu</a> and colleagues, under the supervision of <a href="https://www.cs.ubc.ca/~fwood/">Dr. Frank Wood</a></p>
+          <div class="paper-link">
+            <span>Read the paper</span>
+            <a href="https://www.alphaxiv.org/abs/2607.28737">Mirror Learning ↗</a>
+          </div>
+        </header>
+
+        <div class="article-body">
+          <p class="lead"><em>Mirror Learning</em> asks whether there is an evolutionarily conservable system that could enable “watch and learn” style, human-like learning.</p>
+
+          <p>We introduce <strong>mirror learning</strong>, a framework that transforms third-person demonstrations into synthetic first-person observation and action data for training embodied agents. Humans and animals routinely learn by watching others, but modern imitation-learning systems still depend heavily on first-person demonstrations collected through teleoperation or direct interaction.</p>
+
+          <p>We show that video diffusion models can be adapted to “put the learner in the demonstrator’s shoes,” synthesizing first-person video from third-person observations. Pairing this video with actions inferred by an inverse dynamics model results in <strong><em>mirror data</em></strong> that can train effective policies on its own—and can further improve behavior cloning when added to standard first-person data.</p>
+
+          <h2>Who do we learn from, and can we put ourselves in their shoes?</h2>
+
+          <figure class="wide-figure">
+            <img src="assets/carla-mirror.gif" alt="CARLA mirror-learning examples showing learner views, segmented demonstrators, generated mirror views, and ground-truth views" width="960" height="1016">
+            <figcaption>We used CARLA to train a mirror video model that puts a learner in a demonstrator’s visual-perceptual shoes. The top row shows what the learner sees. We use <a href="https://arxiv.org/pdf/2304.02643">Segment Anything</a> to identify the pose and outline of a demonstrator, highlighted here in orange and blue. Because this is a simulator, we also know the ground-truth egocentric video for each demonstrator. The generated mirror samples are remarkably close.</figcaption>
+          </figure>
+
+          <p>This was a eureka moment for us: video diffusion models, repurposed in this way, have spatial representations rich enough to perform a perspective transformation while inferring the demonstrator’s pose from only a segmentation mask. Our previous work on <a href="https://arxiv.org/abs/2406.04814">lifelong learning of video diffusion models</a> suggests that this view-transforming capability may eventually be learned entirely locally.</p>
+
+          <figure class="wide-figure">
+            <video autoplay muted loop playsinline preload="metadata" aria-label="Mirror-learning predictions on real-world May Mobility robotaxi data">
+              <source src="assets/robotaxi-mirror.mp4" type="video/mp4">
+              Your browser does not support embedded video.
+            </video>
+            <figcaption>The next aha moment came when the simulation-trained model transferred zero-shot to real-world data. A <a href="https://arxiv.org/abs/2406.09383">May Mobility dataset</a> contains moments when one robotaxi observes another, giving us perceptual ground truth for the demonstrator. Remarkably, although the CARLA training data contained no pedestrians, the model still produces sensible pedestrian presence and motion.</figcaption>
+          </figure>
+
+          <h2>Can we learn to drive simply by watching others?</h2>
+
+          <p>The short answer is yes. An inverse dynamics model—which estimates the action that produced a change in observations—can be trained locally and applied to mirror video to generate action labels. Both the inverse dynamics model and the mirror video model introduce noise, but the resulting data is still good enough for behavior cloning. In the paper, we train an end-to-end self-driving policy from it.</p>
+
+          <p>More interestingly, we can directly compare real, ground-truth demonstrations with mirror data. We find that mirror data is about half as effective as first-person data for training. That may sound negative, but it is a major win: both the mirror video model and inverse dynamics model can be trained locally, requiring nothing beyond experience from the target embodiment itself.</p>
+
+          <figure class="chart-figure">
+            <img src="assets/scaling-comparison.png" alt="Scaling comparison between policy performance trained on ground-truth data and mirror data" width="1744" height="1214" loading="lazy">
+          </figure>
+
+          <p>We have not yet studied cross-embodiment learning; in our experiments, learner and demonstrator share the same sensor and actuator setup. Still, the implications for teleoperation versus passive data gathering are profound. If a robot can train a sufficiently good inverse dynamics model and world model from its own interactions, it has what it needs for mirror learning. Heavily instrumenting a single humanoid robot—or a human demonstrator—with tactile, pressure, torque, and other sensors might be enough to harvest training data passively.</p>
+
+          <h2>What about humanoids and more complex environments?</h2>
+
+          <p>We also used instrumented Minecraft videos from a complex <a href="https://plaicraft.ai">multiplayer environment</a> where the demonstrator’s ground-truth view was available. It works there too. We were particularly struck by the third-column example below, where the mirror video model understands that the demonstrator picked up an item and updates the toolbar accordingly.</p>
+
+          <figure class="wide-figure">
+            <img src="assets/minecraft-mirror.gif" alt="Minecraft mirror-learning examples comparing learner, demonstrator, generated mirror, and ground-truth views" width="1200" height="728" loading="lazy">
+          </figure>
+
+          <aside class="opportunity-card">
+            <p class="eyebrow">Collaboration, licensing, and other opportunities</p>
+            <h2>There is much more to reduce to practice.</h2>
+            <p>This includes multi-sensor and multi-modality variants, more complex action spaces, and stronger inverse dynamics models. The general mirror learning methodology is the subject of a provisional patent application whose rights are currently assigned to <a href="https://www.inverted.ai">Inverted AI</a>. Upon acceptance at a major venue, we will release source code.</p>
+            <a class="contact-button" href="mailto:fwood@cs.ubc.ca?subject=Mirror%20Learning%20collaboration">Discuss a collaboration</a>
+          </aside>
+        </div>
+      </article>
+    </main>
+
+    <footer>
+      <p>© 2026 Yunpeng (Larry) Liu · <a href="https://plai.cs.ubc.ca/2026/08/07/mirror-learning/">Originally published by UBC PLAI</a></p>
+    </footer>
+  </body>
+</html>
